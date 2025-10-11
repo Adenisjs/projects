@@ -2,8 +2,8 @@
 
 A collection of professional Roblox systems and tools designed to enhance gameplay experiences and streamline development workflows.
 
-> **Portfolio Notice:**  
-> This repository primarily serves as a portfolio showcase for potential employers. While you're welcome to use these projects, **do not claim them as your own work**. Proper attribution to the original author is mandatory.
+> **Portfolio Showcase:**  
+> This repository is intended **exclusively as a portfolio** to demonstrate my skills and experience to potential employers. **These projects are not available for public use, modification, or distribution.** All rights reserved.
 
 ## 📋 Featured Projects
 
@@ -16,41 +16,23 @@ Advanced administration tools providing comprehensive moderation and management 
 ### Character System
 A flexible character management framework offering customizable player avatars, stats, and progression systems.
 
-### CIA Automations System v2
+### CIA Automations System v2 (Not on here yet)
 An enhanced automation suite designed to streamline repetitive tasks and improve development efficiency.
 
-## 🚀 Getting Started
+## 📂 Repository Structure
 
-### Installation
+Each project contains its own documentation and technical details within its respective directory. Browse through the folders to explore the implementation and architecture of each system.
 
-```bash
-git clone https://github.com/Adenisjs/projects.git
-cd projects
-```
+## ⚖️ License & Usage Rights
 
-### Usage
+**All Rights Reserved** © Adenisjs
 
-Each project contains its own documentation and setup instructions within its respective directory. Navigate to the specific project folder to get started.
+> **Important:**  
+> These projects are **NOT available for public use**. This repository exists solely to showcase my development capabilities to potential employers. Unauthorized use, modification, or distribution of any code or assets is strictly prohibited.
 
-## ⚖️ License & Attribution
+## 🤝 Viewing Only
 
-This repository is licensed under the **MIT License**.
-
-> **Important Notice:**  
-> You are free to use, modify, and distribute these projects. However, **proper attribution is required**:
-> - Credit must be given to the original author (Adenisjs)
-> - Attribution must be maintained even in modified versions
-> - Any derivative work must acknowledge it is based on this original work
-
-## 🤝 Contributing
-
-Contributions are welcome and appreciated! Here's how you can help:
-
-1. **Fork** this repository
-2. **Create** a new branch (`git checkout -b feature/amazing-feature`)
-3. **Commit** your changes (`git commit -m 'Add some amazing feature'`)
-4. **Push** to the branch (`git push origin feature/amazing-feature`)
-5. **Open** a Pull Request with a detailed description of your changes
+This is a **read-only showcase repository**. Contributions, forks, and pull requests are not accepted as these projects are proprietary works maintained solely by the author.
 
 ## 📞 Support
 
