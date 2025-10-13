@@ -1,0 +1,872 @@
+-- PASTE THIS INTO COMMAND BAR TO CREATE COMPLETE BOMB SYSTEM WITH WIRE CUTTING
+-- Creates bomb sites, RemoteEvents, and all necessary scripts
+
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Workspace = game:GetService("Workspace")
+local ServerScriptService = game:GetService("ServerScriptService")
+local StarterGui = game:GetService("StarterGui")
+local StarterPlayer = game:GetService("StarterPlayer")
+local StarterPlayerScripts = StarterPlayer:WaitForChild("StarterPlayerScripts")
+
+print("🚀 Starting Bomb System Installation...")
+
+-- Clean up old stuff
+if Workspace:FindFirstChild("BombSites") then
+Workspace.BombSites:Destroy()
+end
+if ReplicatedStorage:FindFirstChild("BombRemotes") then
+ReplicatedStorage.BombRemotes:Destroy()
+end
+if ServerScriptService:FindFirstChild("BombSystemManager") then
+ServerScriptService.BombSystemManager:Destroy()
+end
+if StarterGui:FindFirstChild("BombGui") then
+StarterGui.BombGui:Destroy()
+end
+if StarterGui:FindFirstChild("DefuseGui") then
+StarterGui.DefuseGui:Destroy()
+end
+if StarterPlayerScripts:FindFirstChild("BombClientHandler") then
+StarterPlayerScripts.BombClientHandler:Destroy()
+end
+
+-- Create RemoteEvents folder
+local remotesFolder = Instance.new("Folder")
+remotesFolder.Name = "BombRemotes"
+remotesFolder.Parent = ReplicatedStorage
+
+local plantRemote = Instance.new("RemoteEvent")
+plantRemote.Name = "PlantBomb"
+plantRemote.Parent = remotesFolder
+
+local defuseRemote = Instance.new("RemoteEvent")
+defuseRemote.Name = "DefuseBomb"
+defuseRemote.Parent = remotesFolder
+
+local cutWireRemote = Instance.new("RemoteEvent")
+cutWireRemote.Name = "CutWire"
+cutWireRemote.Parent = remotesFolder
+
+local updateRemote = Instance.new("RemoteEvent")
+updateRemote.Name = "UpdateBombUI"
+updateRemote.Parent = remotesFolder
+
+local defuseUIRemote = Instance.new("RemoteEvent")
+defuseUIRemote.Name = "DefuseUI"
+defuseUIRemote.Parent = remotesFolder
+
+print("✅ Created RemoteEvents")
+
+-- Create BombSites folder
+local bombSitesFolder = Instance.new("Folder")
+bombSitesFolder.Name = "BombSites"
+bombSitesFolder.Parent = Workspace
+
+-- Function to create a bomb site
+local function createBombSite(name, position, color)
+local bombPart = Instance.new("Part")
+bombPart.Name = name
+bombPart.Size = Vector3.new(12, 1, 12)
+bombPart.Position = position
+bombPart.Anchored = true
+bombPart.CanCollide = true
+bombPart.Material = Enum.Material.Neon
+bombPart.Color = color
+bombPart.Transparency = 0.3
+bombPart.Parent = bombSitesFolder
+
+-- ProximityPrompt for planting
+local plantPrompt = Instance.new("ProximityPrompt")
+plantPrompt.Name = "PlantPrompt"
+plantPrompt.ActionText = "Plant Bomb"
+plantPrompt.ObjectText = name:gsub("Site", " SITE ")
+plantPrompt.HoldDuration = 3
+plantPrompt.MaxActivationDistance = 12
+plantPrompt.RequiresLineOfSight = false
+plantPrompt.Enabled = true
+plantPrompt.Parent = bombPart
+
+-- ProximityPrompt for defusing (starts disabled)
+local defusePrompt = Instance.new("ProximityPrompt")
+defusePrompt.Name = "DefusePrompt"
+defusePrompt.ActionText = "Open Defuse Panel"
+defusePrompt.ObjectText = "💣 DEFUSE"
+defusePrompt.HoldDuration = 0
+defusePrompt.MaxActivationDistance = 12
+defusePrompt.RequiresLineOfSight = false
+defusePrompt.Enabled = false
+defusePrompt.Parent = bombPart
+
+-- Highlight
+local highlight = Instance.new("Highlight")
+highlight.FillColor = color
+highlight.OutlineColor = Color3.new(1, 1, 1)
+highlight.FillTransparency = 0.4
+highlight.OutlineTransparency = 0
+highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+highlight.Parent = bombPart
+
+-- Light
+local light = Instance.new("PointLight")
+light.Brightness = 3
+light.Color = color
+light.Range = 25
+light.Parent = bombPart
+
+-- BillboardGui
+local billboard = Instance.new("BillboardGui")
+billboard.Name = "SiteLabel"
+billboard.Size = UDim2.new(6, 0, 3, 0)
+billboard.StudsOffset = Vector3.new(0, 5, 0)
+billboard.AlwaysOnTop = true
+billboard.Parent = bombPart
+
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(1, 0, 1, 0)
+frame.BackgroundColor3 = Color3.new(0, 0, 0)
+frame.BackgroundTransparency = 0.3
+frame.BorderSizePixel = 0
+frame.Parent = billboard
+
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0.15, 0)
+corner.Parent = frame
+
+local label = Instance.new("TextLabel")
+label.Name = "MainLabel"
+label.Size = UDim2.new(1, 0, 1, 0)
+label.BackgroundTransparency = 1
+label.Text = "💣 " .. name:gsub("Site", " SITE ")
+label.TextColor3 = Color3.new(1, 1, 1)
+label.Font = Enum.Font.GothamBold
+label.TextScaled = true
+label.Parent = frame
+
+local padding = Instance.new("UIPadding")
+padding.PaddingLeft = UDim.new(0.1, 0)
+padding.PaddingRight = UDim.new(0.1, 0)
+padding.PaddingTop = UDim.new(0.2, 0)
+padding.PaddingBottom = UDim.new(0.2, 0)
+padding.Parent = label
+
+print("✅ Created " .. name .. " at " .. tostring(position))
+end
+
+-- Find spawn or use default position
+local spawnLocation = Workspace:FindFirstChild("SpawnLocation")
+local basePos = spawnLocation and spawnLocation.Position or Vector3.new(0, 10, 0)
+
+-- Create 3 bomb sites
+createBombSite("SiteA", basePos + Vector3.new(25, 3, 0), Color3.fromRGB(239, 68, 68))
+createBombSite("SiteB", basePos + Vector3.new(-25, 3, 25), Color3.fromRGB(250, 204, 21))
+createBombSite("SiteC", basePos + Vector3.new(-25, 3, -25), Color3.fromRGB(59, 130, 246))
+
+-- Create CLIENT HANDLER (in StarterPlayerScripts so it actually runs!)
+local clientHandler = Instance.new("LocalScript")
+clientHandler.Name = "BombClientHandler"
+clientHandler.Source = [[
+-- This script handles all proximity prompts for bomb sites
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Players = game:GetService("Players")
+
+local player = Players.LocalPlayer
+local remotesFolder = ReplicatedStorage:WaitForChild("BombRemotes")
+local plantRemote = remotesFolder:WaitForChild("PlantBomb")
+local defuseRemote = remotesFolder:WaitForChild("DefuseBomb")
+local defuseUIRemote = remotesFolder:WaitForChild("DefuseUI")
+
+local bombSites = workspace:WaitForChild("BombSites")
+
+-- Wait a moment for character to load
+task.wait(1)
+
+print("🎮 [CLIENT] Bomb handler loaded for", player.Name)
+
+-- Connect to all bomb sites
+for _, site in pairs(bombSites:GetChildren()) do
+if site:IsA("BasePart") then
+local plantPrompt = site:WaitForChild("PlantPrompt", 5)
+local defusePrompt = site:WaitForChild("DefusePrompt", 5)
+
+if plantPrompt then
+plantPrompt.Triggered:Connect(function()
+print("🎯 [CLIENT] Plant triggered at", site.Name)
+plantRemote:FireServer(site.Name)
+end)
+print("✅ [CLIENT] Connected plant prompt for", site.Name)
+end
+
+if defusePrompt then
+defusePrompt.Triggered:Connect(function()
+print("✂️ [CLIENT] Opening defuse panel for", site.Name)
+-- Request defuse UI from server
+defuseUIRemote:FireServer("open", site.Name)
+end)
+print("✅ [CLIENT] Connected defuse prompt for", site.Name)
+end
+end
+end
+
+print("✅ [CLIENT] All proximity prompts connected!")
+]]
+clientHandler.Parent = StarterPlayerScripts
+
+print("✅ Created Client Handler in StarterPlayerScripts")
+
+-- Create Server Manager Script
+local serverManager = Instance.new("Script")
+serverManager.Name = "BombSystemManager"
+serverManager.Source = [[
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Players = game:GetService("Players")
+local Debris = game:GetService("Debris")
+
+local remotesFolder = ReplicatedStorage:WaitForChild("BombRemotes")
+local plantRemote = remotesFolder:WaitForChild("PlantBomb")
+local defuseRemote = remotesFolder:WaitForChild("DefuseBomb")
+local cutWireRemote = remotesFolder:WaitForChild("CutWire")
+local updateRemote = remotesFolder:WaitForChild("UpdateBombUI")
+local defuseUIRemote = remotesFolder:WaitForChild("DefuseUI")
+
+local bombSites = workspace:WaitForChild("BombSites")
+
+-- Game state
+local activeBomb = nil -- {siteName, timeLeft, bombModel, correctWire}
+local BOMB_TIMER = 45 -- seconds until explosion
+local roundActive = true
+
+-- Wire colors
+local WIRE_COLORS = {"Red", "Blue", "Green", "Yellow"}
+
+print("🚀 [SERVER] Bomb System Manager started")
+
+-- Plant bomb
+plantRemote.OnServerEvent:Connect(function(player, siteName)
+print("📥 [SERVER] Plant request from", player.Name, "for", siteName)
+
+if not roundActive then
+warn("❌ Round not active")
+return
+end
+if activeBomb then
+warn("❌ Bomb already planted!")
+return
+end
+
+local site = bombSites:FindFirstChild(siteName)
+if not site then
+warn("❌ Site not found:", siteName)
+return
+end
+
+local plantPrompt = site:FindFirstChild("PlantPrompt")
+local defusePrompt = site:FindFirstChild("DefusePrompt")
+if not plantPrompt or not defusePrompt then
+warn("❌ Prompts not found")
+return
+end
+
+print("💣 [SERVER] PLANTING BOMB AT", siteName)
+
+-- Disable plant prompt, enable defuse prompt
+plantPrompt.Enabled = false
+defusePrompt.Enabled = true
+
+-- Disable all other site plant prompts
+for _, otherSite in pairs(bombSites:GetChildren()) do
+local otherPlant = otherSite:FindFirstChild("PlantPrompt")
+if otherPlant then
+otherPlant.Enabled = false
+end
+end
+
+-- Create bomb model
+local bomb = Instance.new("Part")
+bomb.Name = "PlantedBomb"
+bomb.Size = Vector3.new(3, 2, 3)
+bomb.Position = site.Position + Vector3.new(0, 2, 0)
+bomb.Anchored = true
+bomb.CanCollide = false
+bomb.Material = Enum.Material.Neon
+bomb.Color = Color3.fromRGB(255, 0, 0)
+bomb.Parent = workspace
+
+-- Bomb light (pulsing)
+local bombLight = Instance.new("PointLight")
+bombLight.Color = Color3.fromRGB(255, 0, 0)
+bombLight.Brightness = 5
+bombLight.Range = 30
+bombLight.Parent = bomb
+
+-- Beeping sound
+local beepSound = Instance.new("Sound")
+beepSound.SoundId = "rbxassetid://9125402735"
+beepSound.Volume = 0.5
+beepSound.Looped = true
+beepSound.Parent = bomb
+beepSound:Play()
+
+-- Update site visuals
+site.Color = Color3.fromRGB(255, 0, 0)
+local highlight = site:FindFirstChild("Highlight")
+if highlight then
+highlight.FillColor = Color3.fromRGB(255, 0, 0)
+end
+
+local billboard = site:FindFirstChild("SiteLabel")
+if billboard then
+local label = billboard:FindFirstChild("Frame"):FindFirstChild("MainLabel")
+if label then
+label.Text = "💣 BOMB PLANTED!"
+label.TextColor3 = Color3.fromRGB(255, 0, 0)
+end
+end
+
+-- Pick random correct wire
+local correctWire = WIRE_COLORS[math.random(1, #WIRE_COLORS)]
+
+-- Set active bomb
+activeBomb = {
+siteName = siteName,
+timeLeft = BOMB_TIMER,
+bombModel = bomb,
+site = site,
+correctWire = correctWire,
+defusingPlayers = {}
+}
+
+print("✅ [SERVER] Bomb planted at " .. siteName .. " by " .. player.Name)
+print("🔐 [SERVER] Correct wire is:", correctWire)
+
+-- Start countdown
+task.spawn(function()
+while activeBomb and activeBomb.timeLeft > 0 do
+task.wait(1)
+if activeBomb then
+activeBomb.timeLeft = activeBomb.timeLeft - 1
+
+-- Update all players' UI
+updateRemote:FireAllClients("update", activeBomb.timeLeft)
+
+-- Speed up beeping as time runs out
+if activeBomb.timeLeft <= 10 then
+beepSound.PlaybackSpeed = 2
+elseif activeBomb.timeLeft <= 20 then
+beepSound.PlaybackSpeed = 1.5
+end
+end
+end
+
+-- Bomb explodes
+if activeBomb then
+explodeBomb()
+end
+end)
+end)
+
+-- Handle defuse UI open/close
+defuseUIRemote.OnServerEvent:Connect(function(player, action, siteName)
+if action == "open" then
+if not activeBomb or activeBomb.siteName ~= siteName then
+return
+end
+
+-- Add player to defusing list
+activeBomb.defusingPlayers[player.UserId] = true
+
+-- Send wire configuration to client
+defuseUIRemote:FireClient(player, "show", WIRE_COLORS)
+print("🔓 [SERVER] Opened defuse panel for", player.Name)
+
+elseif action == "close" then
+if activeBomb and activeBomb.defusingPlayers[player.UserId] then
+activeBomb.defusingPlayers[player.UserId] = nil
+end
+end
+end)
+
+-- Handle wire cutting
+cutWireRemote.OnServerEvent:Connect(function(player, wireColor)
+if not activeBomb then
+return
+end
+
+print("✂️ [SERVER]", player.Name, "cut the", wireColor, "wire")
+
+if wireColor == activeBomb.correctWire then
+-- CORRECT WIRE - Defuse successful!
+print("✅ [SERVER] CORRECT WIRE! Bomb defused by", player.Name)
+
+-- Close defuse UI for all players
+for userId, _ in pairs(activeBomb.defusingPlayers) do
+local defusingPlayer = Players:GetPlayerByUserId(userId)
+if defusingPlayer then
+defuseUIRemote:FireClient(defusingPlayer, "hide")
+end
+end
+
+local site = activeBomb.site
+local bomb = activeBomb.bombModel
+
+-- Visual feedback
+site.Color = Color3.fromRGB(34, 197, 94)
+local highlight = site:FindFirstChild("Highlight")
+if highlight then
+highlight.FillColor = Color3.fromRGB(34, 197, 94)
+end
+
+local billboard = site:FindFirstChild("SiteLabel")
+if billboard then
+local label = billboard:FindFirstChild("Frame"):FindFirstChild("MainLabel")
+if label then
+label.Text = "✅ DEFUSED!"
+label.TextColor3 = Color3.fromRGB(34, 197, 94)
+end
+end
+
+-- Remove bomb
+if bomb then
+bomb:Destroy()
+end
+
+-- Update UI
+updateRemote:FireAllClients("defused")
+
+-- Clear active bomb
+activeBomb = nil
+
+-- Wait then reset sites
+task.wait(3)
+resetSites()
+
+else
+-- WRONG WIRE - Instant explosion!
+print("❌ [SERVER] WRONG WIRE! Instant detonation!")
+
+-- Close UI for this player
+defuseUIRemote:FireClient(player, "hide")
+
+-- Instant explosion
+activeBomb.timeLeft = 0
+explodeBomb()
+end
+end)
+
+function explodeBomb()
+if not activeBomb then return end
+
+local bomb = activeBomb.bombModel
+local site = activeBomb.site
+
+print("💥 [SERVER] BOMB EXPLODED!")
+
+-- Close all defuse UIs
+for userId, _ in pairs(activeBomb.defusingPlayers) do
+local defusingPlayer = Players:GetPlayerByUserId(userId)
+if defusingPlayer then
+defuseUIRemote:FireClient(defusingPlayer, "hide")
+end
+end
+
+-- Update UI
+updateRemote:FireAllClients("exploded")
+
+-- Create explosion
+local explosion = Instance.new("Explosion")
+explosion.Position = bomb.Position
+explosion.BlastRadius = 50
+explosion.BlastPressure = 500000
+explosion.Parent = workspace
+
+-- Particle effects
+local particles = Instance.new("Part")
+particles.Size = Vector3.new(1, 1, 1)
+particles.Position = bomb.Position
+particles.Anchored = true
+particles.CanCollide = false
+particles.Transparency = 1
+particles.Parent = workspace
+
+local fire = Instance.new("Fire")
+fire.Size = 30
+fire.Heat = 25
+fire.Parent = particles
+
+local smoke = Instance.new("Smoke")
+smoke.Size = 20
+smoke.RiseVelocity = 15
+smoke.Parent = particles
+
+Debris:AddItem(particles, 5)
+
+-- Destroy bomb
+bomb:Destroy()
+
+-- Clear state
+activeBomb = nil
+roundActive = false
+
+-- Wait then reset
+task.wait(5)
+resetSites()
+roundActive = true
+end
+
+function resetSites()
+print("🔄 [SERVER] Resetting sites...")
+
+for _, site in pairs(bombSites:GetChildren()) do
+if site:IsA("BasePart") then
+-- Reset visuals
+local originalColor = site.Name == "SiteA" and Color3.fromRGB(239, 68, 68)
+or site.Name == "SiteB" and Color3.fromRGB(250, 204, 21)
+or Color3.fromRGB(59, 130, 246)
+
+site.Color = originalColor
+
+local highlight = site:FindFirstChild("Highlight")
+if highlight then
+highlight.FillColor = originalColor
+end
+
+local billboard = site:FindFirstChild("SiteLabel")
+if billboard then
+local label = billboard:FindFirstChild("Frame"):FindFirstChild("MainLabel")
+if label then
+label.Text = "💣 " .. site.Name:gsub("Site", " SITE ")
+label.TextColor3 = Color3.new(1, 1, 1)
+end
+end
+
+-- Enable plant prompts
+local plantPrompt = site:FindFirstChild("PlantPrompt")
+if plantPrompt then
+plantPrompt.Enabled = true
+end
+
+-- Disable defuse prompts
+local defusePrompt = site:FindFirstChild("DefusePrompt")
+if defusePrompt then
+defusePrompt.Enabled = false
+end
+end
+end
+
+updateRemote:FireAllClients("reset")
+print("✅ [SERVER] Sites reset complete")
+end
+]]
+serverManager.Parent = ServerScriptService
+
+print("✅ Created Server Manager")
+
+-- Create Bomb Timer GUI
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "BombGui"
+screenGui.ResetOnSpawn = false
+screenGui.Parent = StarterGui
+
+local frame = Instance.new("Frame")
+frame.Name = "TimerFrame"
+frame.Size = UDim2.new(0, 250, 0, 80)
+frame.Position = UDim2.new(0.5, -125, 0, 20)
+frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+frame.BorderSizePixel = 0
+frame.Visible = false
+frame.Parent = screenGui
+
+local frameCorner = Instance.new("UICorner")
+frameCorner.CornerRadius = UDim.new(0, 12)
+frameCorner.Parent = frame
+
+local timerLabel = Instance.new("TextLabel")
+timerLabel.Name = "TimerLabel"
+timerLabel.Size = UDim2.new(1, 0, 0.6, 0)
+timerLabel.BackgroundTransparency = 1
+timerLabel.Text = "45"
+timerLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+timerLabel.Font = Enum.Font.GothamBold
+timerLabel.TextSize = 36
+timerLabel.Parent = frame
+
+local statusLabel = Instance.new("TextLabel")
+statusLabel.Name = "StatusLabel"
+statusLabel.Size = UDim2.new(1, 0, 0.4, 0)
+statusLabel.Position = UDim2.new(0, 0, 0.6, 0)
+statusLabel.BackgroundTransparency = 1
+statusLabel.Text = "💣 BOMB PLANTED"
+statusLabel.TextColor3 = Color3.fromRGB(239, 68, 68)
+statusLabel.Font = Enum.Font.Gotham
+statusLabel.TextSize = 16
+statusLabel.Parent = frame
+
+-- GUI Client Script
+local guiScript = Instance.new("LocalScript")
+guiScript.Name = "BombGuiScript"
+guiScript.Source = [[
+local gui = script.Parent
+local frame = gui:WaitForChild("TimerFrame")
+local timerLabel = frame:WaitForChild("TimerLabel")
+local statusLabel = frame:WaitForChild("StatusLabel")
+
+local remotesFolder = game.ReplicatedStorage:WaitForChild("BombRemotes")
+local updateRemote = remotesFolder:WaitForChild("UpdateBombUI")
+
+print("🎮 [CLIENT] Bomb GUI loaded")
+
+updateRemote.OnClientEvent:Connect(function(action, data)
+
+if action == "update" then
+frame.Visible = true
+timerLabel.Text = tostring(data)
+
+if data <= 10 then
+timerLabel.TextColor3 = Color3.fromRGB(255, 50, 50)
+statusLabel.TextColor3 = Color3.fromRGB(255, 50, 50)
+elseif data <= 20 then
+timerLabel.TextColor3 = Color3.fromRGB(255, 200, 50)
+statusLabel.TextColor3 = Color3.fromRGB(255, 200, 50)
+end
+
+elseif action == "defused" then
+statusLabel.Text = "✅ BOMB DEFUSED"
+statusLabel.TextColor3 = Color3.fromRGB(34, 197, 94)
+timerLabel.TextColor3 = Color3.fromRGB(34, 197, 94)
+
+task.wait(3)
+frame.Visible = false
+
+elseif action == "exploded" then
+statusLabel.Text = "💥 EXPLOSION!"
+statusLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
+timerLabel.Text = "0"
+
+task.wait(3)
+frame.Visible = false
+
+elseif action == "reset" then
+frame.Visible = false
+timerLabel.Text = "45"
+timerLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+statusLabel.Text = "💣 BOMB PLANTED"
+statusLabel.TextColor3 = Color3.fromRGB(239, 68, 68)
+end
+end)
+]]
+guiScript.Parent = screenGui
+
+print("✅ Created Bomb Timer GUI")
+
+-- Create DEFUSE GUI (Wire Cutting Interface)
+local defuseGui = Instance.new("ScreenGui")
+defuseGui.Name = "DefuseGui"
+defuseGui.ResetOnSpawn = false
+defuseGui.Parent = StarterGui
+
+local defuseFrame = Instance.new("Frame")
+defuseFrame.Name = "DefuseFrame"
+defuseFrame.Size = UDim2.new(0, 400, 0, 300)
+defuseFrame.Position = UDim2.new(0.5, -200, 0.5, -150)
+defuseFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+defuseFrame.BorderSizePixel = 0
+defuseFrame.Visible = false
+defuseFrame.Parent = defuseGui
+
+local defuseCorner = Instance.new("UICorner")
+defuseCorner.CornerRadius = UDim.new(0, 15)
+defuseCorner.Parent = defuseFrame
+
+local defuseTitle = Instance.new("TextLabel")
+defuseTitle.Name = "Title"
+defuseTitle.Size = UDim2.new(1, 0, 0, 50)
+defuseTitle.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+defuseTitle.BorderSizePixel = 0
+defuseTitle.Text = "⚠️ DEFUSE BOMB - CUT A WIRE ⚠️"
+defuseTitle.TextColor3 = Color3.new(1, 1, 1)
+defuseTitle.Font = Enum.Font.GothamBold
+defuseTitle.TextSize = 20
+defuseTitle.Parent = defuseFrame
+
+local titleCorner = Instance.new("UICorner")
+titleCorner.CornerRadius = UDim.new(0, 15)
+titleCorner.Parent = defuseTitle
+
+local warningLabel = Instance.new("TextLabel")
+warningLabel.Name = "Warning"
+warningLabel.Size = UDim2.new(1, -40, 0, 40)
+warningLabel.Position = UDim2.new(0, 20, 0, 60)
+warningLabel.BackgroundTransparency = 1
+warningLabel.Text = "⚠️ WARNING: Cut the wrong wire and the bomb explodes!"
+warningLabel.TextColor3 = Color3.fromRGB(255, 200, 0)
+warningLabel.Font = Enum.Font.Gotham
+warningLabel.TextSize = 14
+warningLabel.TextWrapped = true
+warningLabel.Parent = defuseFrame
+
+local wiresContainer = Instance.new("Frame")
+wiresContainer.Name = "WiresContainer"
+wiresContainer.Size = UDim2.new(1, -40, 1, -160)
+wiresContainer.Position = UDim2.new(0, 20, 0, 110)
+wiresContainer.BackgroundTransparency = 1
+wiresContainer.Parent = defuseFrame
+
+local wiresLayout = Instance.new("UIListLayout")
+wiresLayout.SortOrder = Enum.SortOrder.LayoutOrder
+wiresLayout.Padding = UDim.new(0, 10)
+wiresLayout.Parent = wiresContainer
+
+local closeButton = Instance.new("TextButton")
+closeButton.Name = "CloseButton"
+closeButton.Size = UDim2.new(0, 100, 0, 35)
+closeButton.Position = UDim2.new(0.5, -50, 1, -45)
+closeButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+closeButton.Text = "CANCEL"
+closeButton.TextColor3 = Color3.new(1, 1, 1)
+closeButton.Font = Enum.Font.GothamBold
+closeButton.TextSize = 16
+closeButton.Parent = defuseFrame
+
+local closeCorner = Instance.new("UICorner")
+closeCorner.CornerRadius = UDim.new(0, 8)
+closeCorner.Parent = closeButton
+
+-- Defuse GUI Script
+local defuseGuiScript = Instance.new("LocalScript")
+defuseGuiScript.Name = "DefuseGuiScript"
+defuseGuiScript.Source = [[
+local gui = script.Parent
+local defuseFrame = gui:WaitForChild("DefuseFrame")
+local wiresContainer = defuseFrame:WaitForChild("WiresContainer")
+local closeButton = defuseFrame:WaitForChild("CloseButton")
+
+local remotesFolder = game.ReplicatedStorage:WaitForChild("BombRemotes")
+local cutWireRemote = remotesFolder:WaitForChild("CutWire")
+local defuseUIRemote = remotesFolder:WaitForChild("DefuseUI")
+
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+
+print("🎮 [CLIENT] Defuse GUI loaded")
+
+-- Wire colors and their RGB values
+local WIRE_COLORS = {
+Red = Color3.fromRGB(239, 68, 68),
+Blue = Color3.fromRGB(59, 130, 246),
+Green = Color3.fromRGB(34, 197, 94),
+Yellow = Color3.fromRGB(250, 204, 21)
+}
+
+-- Function to create wire button
+local function createWireButton(wireColor, layoutOrder)
+local button = Instance.new("TextButton")
+button.Name = wireColor .. "Wire"
+button.Size = UDim2.new(1, 0, 0, 45)
+button.BackgroundColor3 = WIRE_COLORS[wireColor]
+button.BorderSizePixel = 0
+button.Text = "✂️ CUT " .. wireColor:upper() .. " WIRE"
+button.TextColor3 = Color3.new(1, 1, 1)
+button.Font = Enum.Font.GothamBold
+button.TextSize = 18
+button.LayoutOrder = layoutOrder
+button.Parent = wiresContainer
+
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 8)
+corner.Parent = button
+
+-- Add stroke for better visibility
+local stroke = Instance.new("UIStroke")
+stroke.Color = Color3.new(1, 1, 1)
+stroke.Thickness = 2
+stroke.Parent = button
+
+-- Hover effect
+button.MouseEnter:Connect(function()
+button.BackgroundTransparency = 0.3
+end)
+
+button.MouseLeave:Connect(function()
+button.BackgroundTransparency = 0
+end)
+
+-- Wire cutting
+button.Activated:Connect(function()
+print("✂️ [CLIENT] Cutting", wireColor, "wire...")
+cutWireRemote:FireServer(wireColor)
+defuseFrame.Visible = false
+
+-- Clear all wire buttons
+for _, child in pairs(wiresContainer:GetChildren()) do
+if child:IsA("TextButton") then
+child:Destroy()
+end
+end
+end)
+
+return button
+end
+
+-- Close button
+closeButton.Activated:Connect(function()
+defuseFrame.Visible = false
+defuseUIRemote:FireServer("close")
+
+-- Clear all wire buttons
+for _, child in pairs(wiresContainer:GetChildren()) do
+if child:IsA("TextButton") then
+child:Destroy()
+end
+end
+end)
+
+-- Listen for defuse UI events from server
+defuseUIRemote.OnClientEvent:Connect(function(action, data)
+if action == "show" then
+-- Clear old buttons
+for _, child in pairs(wiresContainer:GetChildren()) do
+if child:IsA("TextButton") then
+child:Destroy()
+end
+end
+
+-- Create wire buttons from server data
+if data then
+for i, wireColor in ipairs(data) do
+createWireButton(wireColor, i)
+end
+end
+
+-- Show the GUI
+defuseFrame.Visible = true
+print("🔓 [CLIENT] Defuse panel opened")
+
+elseif action == "hide" then
+defuseFrame.Visible = false
+
+-- Clear all wire buttons
+for _, child in pairs(wiresContainer:GetChildren()) do
+if child:IsA("TextButton") then
+child:Destroy()
+end
+end
+
+print("🔒 [CLIENT] Defuse panel closed")
+end
+end)
+-- Add this to the END of your script to complete it:
+
+]]
+defuseGuiScript.Parent = defuseGui
+
+print("✅ Created Defuse GUI")
+
+print("🎉🎉🎉 BOMB SYSTEM INSTALLATION COMPLETE! 🎉🎉🎉")
+print("📍 3 Bomb Sites Created (A, B, C)")
+print("⚡ All RemoteEvents Created")
+print("🖥️ Server Manager Installed")
+print("💻 Client Handler Installed")
+print("🎨 GUIs Created (Timer + Defuse Panel)")
+print("")
+print("✅ Ready to play! Walk up to a bomb site and hold E to plant!")
+print("✂️ After planting, approach and press E to open defuse panel")
+print("🎲 Choose the correct wire... or BOOM! 💥")
