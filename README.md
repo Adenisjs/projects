@@ -19,6 +19,9 @@ A flexible character management framework offering customizable player avatars, 
 ### CIA Automations System v2 (Not on here yet)
 An enhanced automation suite designed to streamline repetitive tasks and improve development efficiency.
 
+### Uniform System
+A Small uniform system I created for a job.
+
 ## 📂 Repository Structure
 
 Each project contains its own documentation and technical details within its respective directory. Browse through the folders to explore the implementation and architecture of each system.
