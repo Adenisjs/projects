@@ -22,6 +22,11 @@ An enhanced automation suite designed to streamline repetitive tasks and improve
 ### Uniform System
 A Small uniform system I created for a job.
 
+### HERAI
+My first discord bot made for ASZ.
+
+
+
 ## 📂 Repository Structure
 
 Each project contains its own documentation and technical details within its respective directory. Browse through the folders to explore the implementation and architecture of each system.
