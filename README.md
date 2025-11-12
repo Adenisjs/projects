@@ -35,19 +35,14 @@ Each project contains its own documentation and technical details within its res
 
 ## 🤝 Viewing Only
 
-This is a **read-only showcase repository**. Contributions, forks, and pull requests are not accepted as these projects are proprietary works maintained solely by the author.
-
-## 📞 Support
-
-**Please note:** This repository is provided as-is and is updated periodically. Active support is not provided, but you can:
-- Check existing documentation in project folders
-- Review closed issues for similar problems
-- Explore the code and documentation for solutions
+This is a **read-only showcase repository**. Contributions, forks, and pull requests are not accepted as these projects are proprietary works maintained solely by the author. All code that I dont want copied is obfuscated VIA my obfuscater, if you want to read it you must contact me on discord at adeniscool65.
 
 ## 🔗 Links
 
 - [GitHub Profile](https://github.com/Adenisjs)
 - [Report Issues](https://github.com/Adenisjs/projects/issues)
+- [DeObfuscator](https://www.adensdevportfolio.com/obfuscator)
+
 
 ---
 
