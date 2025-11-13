@@ -25,6 +25,10 @@ A Small uniform system I created for a job.
 ### HERAI
 My first discord bot made for ASZ.
 
+### Cracker
+Universal XOR Brute Force Cracker created by Me.
+
+
 
 
 ## 📂 Repository Structure
