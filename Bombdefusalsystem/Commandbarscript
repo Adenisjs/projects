@@ -1,5 +1,4 @@
--- PASTE THIS INTO COMMAND BAR TO CREATE COMPLETE BOMB SYSTEM WITH WIRE CUTTING
--- Creates bomb sites, RemoteEvents, and all necessary scripts
+
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
