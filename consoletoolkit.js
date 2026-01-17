@@ -35,7 +35,7 @@ snake: () => {
       function update() {
         const head = {x: snake[0].x + dir.x, y: snake[0].y + dir.y};
 
-        if (head.x < 0 || head.x >= gridSize || head.y < 0 || head.y >= gridSize || snake.some(s => s.x === head.x && s.y === head.y)) {
+        if (head.x < 0 || head.x >= gridSize || head.y < 0 || head.y >= gridSize || snake.some(function(s) { return s.x === head.x && s.y === head.y; })) {
           clearInterval(gameLoop);
           alert('Game Over! Score: ' + score);
           return;
