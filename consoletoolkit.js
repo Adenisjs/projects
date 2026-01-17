@@ -1,4 +1,1099 @@
-(function() {
+snake: () => {
+      const win = createWindow('snake', '🐍 Snake Game', `
+        <div style="text-align:center;">
+          <div style="font-size:24px;font-weight:700;margin-bottom:15px;">Score: <span id="snake-score">0</span></div>
+          <canvas id="snake-canvas" width="300" height="300" style="border:3px solid #333;border-radius:8px;background:#f0f0f0;"></canvas>
+          <button class="tw-btn tw-btn-primary" id="snake-restart" style="margin-top:15px;">🔄 Restart Game</button>
+          <div style="font-size:12px;color:#718096;margin-top:10px;">Use arrow keys to play</div>
+        </div>
+      `, '360px');
+
+      const canvas = win.querySelector('#snake-canvas');
+      const ctx = canvas.getContext('2d');
+      const scoreEl = win.querySelector('#snake-score');
+      const restartBtn = win.querySelector('#snake-restart');
+
+      const gridSize = 15;
+      const tileSize = 20;
+      let snake = [{x: 7, y: 7}];
+      let dir = {x: 1, y: 0};
+      let food = {x: 10, y: 10};
+      let score = 0;
+      let gameLoop;
+
+      function draw() {
+        ctx.fillStyle = '#f0f0f0';
+        ctx.fillRect(0, 0, 300, 300);
+
+        ctx.fillStyle = '#48bb78';
+        snake.forEach(s => ctx.fillRect(s.x * tileSize, s.y * tileSize, tileSize - 2, tileSize - 2));
+
+        ctx.fillStyle = '#f56565';
+        ctx.fillRect(food.x * tileSize, food.y * tileSize, tileSize - 2, tileSize - 2);
+      }
+
+      function update() {
+        const head = {x: snake[0].x + dir.x, y: snake[0].y + dir.y};
+
+        if (head.x < 0 || head.x >= gridSize || head.y < 0 || head.y >= gridSize || snake.some(s => s.x === head.x && s.y === head.y)) {
+          clearInterval(gameLoop);
+          alert('Game Over! Score: ' + score);
+          return;
+        }
+
+        snake.unshift(head);
+
+        if (head.x === food.x && head.y === food.y) {
+          score++;
+          scoreEl.textContent = score;
+          food = {x: Math.floor(Math.random() * gridSize), y: Math.floor(Math.random() * gridSize)};
+        } else {
+          snake.pop();
+        }
+
+        draw();
+      }
+
+      document.addEventListener('keydown', (e) => {
+        if (!win.parentNode) return;
+        if (e.key === 'ArrowUp' && dir.y === 0) dir = {x: 0, y: -1};
+        if (e.key === 'ArrowDown' && dir.y === 0) dir = {x: 0, y: 1};
+        if (e.key === 'ArrowLeft' && dir.x === 0) dir = {x: -1, y: 0};
+        if (e.key === 'ArrowRight' && dir.x === 0) dir = {x: 1, y: 0};
+      });
+
+      function start() {
+        snake = [{x: 7, y: 7}];
+        dir = {x: 1, y: 0};
+        score = 0;
+        scoreEl.textContent = '0';
+        food = {x: 10, y: 10};
+        clearInterval(gameLoop);
+        gameLoop = setInterval(update, 150);
+        draw();
+      }
+
+      restartBtn.onclick = start;
+      start();
+    },
+
+    inspector: () => {
+      const overlay = document.createElement('div');
+      overlay.id = 'inspector-overlay';
+      overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:999996;';
+      
+      const box = document.createElement('div');
+      box.style.cssText = 'position:absolute;border:2px solid #667eea;background:rgba(102,126,234,0.1);pointer-events:none;box-shadow:0 0 0 9999px rgba(0,0,0,0.3);';
+      overlay.appendChild(box);
+      
+      const label = document.createElement('div');
+      label.style.cssText = 'position:absolute;background:#667eea;color:white;padding:6px 12px;font-size:12px;border-radius:6px;pointer-events:none;font-family:monospace;font-weight:600;box-shadow:0 2px 8px rgba(0,0,0,0.3);';
+      overlay.appendChild(label);
+
+      const info = document.createElement('div');
+      info.style.cssText = 'position:fixed;bottom:20px;left:20px;background:rgba(30,30,30,0.95);color:white;padding:15px 20px;border-radius:12px;font-family:monospace;font-size:12px;max-width:400px;backdrop-filter:blur(10px);box-shadow:0 4px 20px rgba(0,0,0,0.5);';
+      info.innerHTML = '<div style="font-weight:700;margin-bottom:8px;">🔍 Inspector Active</div><div id="inspector-info">Hover over elements...</div><div style="margin-top:10px;font-size:11px;opacity:0.7;">Press ESC to exit</div>';
+      overlay.appendChild(info);
+      
+      document.body.appendChild(overlay);
+      
+      let lastEl = null;
+      const infoDiv = info.querySelector('#inspector-info');
+      
+      const moveHandler = (e) => {
+        const el = document.elementFromPoint(e.clientX, e.clientY);
+        if (el && el !== lastEl && !el.closest('#inspector-overlay') && !el.closest('.tw')) {
+          lastEl = el;
+          const rect = el.getBoundingClientRect();
+          box.style.left = rect.left + 'px';
+          box.style.top = rect.top + 'px';
+          box.style.width = rect.width + 'px';
+          box.style.height = rect.height + 'px';
+          
+          const tag = el.tagName.toLowerCase();
+          const id = el.id ? `#${el.id}` : '';
+          const cls = el.className ? `.${el.className.toString().split(' ')[0]}` : '';
+          const styles = window.getComputedStyle(el);
+          
+          label.textContent = `${tag}${id}${cls}`;
+          label.style.left = rect.left + 'px';
+          label.style.top = Math.max(0, rect.top - 30) + 'px';
+          
+          infoDiv.innerHTML = `
+            <strong>${tag}${id}${cls}</strong><br>
+            Size: ${Math.round(rect.width)} × ${Math.round(rect.height)}px<br>
+            Position: ${Math.round(rect.left)}, ${Math.round(rect.top)}<br>
+            Color: ${styles.color}<br>
+            Background: ${styles.backgroundColor}<br>
+            Font: ${styles.fontSize} ${styles.fontFamily.split(',')[0]}
+          `;
+        }
+      };
+
+      const keyHandler = (e) => {
+        if (e.key === 'Escape') {
+          overlay.remove();
+          document.removeEventListener('mousemove', moveHandler);
+          document.removeEventListener('keydown', keyHandler);
+        }
+      };
+      
+      document.addEventListener('mousemove', moveHandler);
+      document.addEventListener('keydown', keyHandler);
+    },
+
+    textreplace: () => {
+      const win = createWindow('textreplace', '✏️ Text Replacer', `
+        <label class="tw-label">Find Text:</label>
+        <input type="text" class="tw-input" id="tr-find" placeholder="Enter text to find...">
+        
+        <label class="tw-label">Replace With:</label>
+        <input type="text" class="tw-input" id="tr-replace" placeholder="Enter replacement...">
+        
+        <div style="display:flex;gap:8px;align-items:center;margin:10px 0;">
+          <input type="checkbox" id="tr-case" style="width:auto;">
+          <label for="tr-case" style="margin:0;font-size:13px;color:#4a5568;">Case sensitive</label>
+        </div>
+        
+        <button class="tw-btn tw-btn-primary" id="tr-replace-btn">🔄 Replace All</button>
+        <button class="tw-btn tw-btn-secondary" id="tr-highlight-btn">🔍 Highlight Matches</button>
+        <button class="tw-btn tw-btn-danger" id="tr-undo-btn">↩️ Undo Changes</button>
+        
+        <div id="tr-status" style="margin-top:15px;padding:12px;background:#f7fafc;border-radius:8px;text-align:center;font-size:13px;color:#4a5568;"></div>
+      `, '450px');
+
+      const findInput = win.querySelector('#tr-find');
+      const replaceInput = win.querySelector('#tr-replace');
+      const caseCheck = win.querySelector('#tr-case');
+      const replaceBtn = win.querySelector('#tr-replace-btn');
+      const highlightBtn = win.querySelector('#tr-highlight-btn');
+      const undoBtn = win.querySelector('#tr-undo-btn');
+      const status = win.querySelector('#tr-status');
+
+      let originalHTML = document.body.innerHTML;
+
+      replaceBtn.onclick = () => {
+        const find = findInput.value;
+        if (!find) return status.textContent = '⚠️ Enter text to find!';
+        
+        originalHTML = document.body.innerHTML;
+        const replace = replaceInput.value;
+        const flags = caseCheck.checked ? 'g' : 'gi';
+        
+        const walker = document.createTreeWalker(
+          document.body,
+          NodeFilter.SHOW_TEXT,
+          null,
+          false
+        );
+
+        let count = 0;
+        const nodesToReplace = [];
+        
+        while (walker.nextNode()) {
+          const node = walker.currentNode;
+          if (node.parentElement.closest('.tw, #aden-toolkit')) continue;
+          
+          const regex = new RegExp(find.replace(/[.*+?^${}()|[\]\\]/g, '\\'), flags);
+          if (regex.test(node.textContent)) {
+            nodesToReplace.push(node);
+          }
+        }
+
+        nodesToReplace.forEach(node => {
+          const regex = new RegExp(find.replace(/[.*+?^${}()|[\]\\]/g, '\\'), flags);
+          const matches = node.textContent.match(regex);
+          if (matches) count += matches.length;
+          node.textContent = node.textContent.replace(regex, replace);
+        });
+
+        status.textContent = `✓ Replaced ${count} occurrence(s)`;
+      };
+
+      highlightBtn.onclick = () => {
+        const find = findInput.value;
+        if (!find) return status.textContent = '⚠️ Enter text to find!';
+        
+        const flags = caseCheck.checked ? 'g' : 'gi';
+        const regex = new RegExp(`(${find.replace(/[.*+?^${}()|[\]\\]/g, '\\')})`, flags);
+        
+        const walker = document.createTreeWalker(
+          document.body,
+          NodeFilter.SHOW_TEXT,
+          null,
+          false
+        );
+
+        let count = 0;
+        const nodesToHighlight = [];
+        
+        while (walker.nextNode()) {
+          const node = walker.currentNode;
+          if (node.parentElement.closest('.tw, #aden-toolkit')) continue;
+          if (regex.test(node.textContent)) {
+            nodesToHighlight.push(node);
+          }
+        }
+
+        nodesToHighlight.forEach(node => {
+          const matches = node.textContent.match(regex);
+          if (matches) count += matches.length;
+          
+          const span = document.createElement('span');
+          span.innerHTML = node.textContent.replace(regex, '<mark style="background:#ffd700;padding:2px 4px;border-radius:3px;">$1</mark>');
+          node.parentNode.replaceChild(span, node);
+        });
+
+        status.textContent = `🔍 Highlighted ${count} match(es)`;
+      };
+
+      undoBtn.onclick = () => {
+        document.body.innerHTML = originalHTML;
+        status.textContent = '↩️ Changes undone';
+        setTimeout(() => {
+          const newWin = createWindow('textreplace', '✏️ Text Replacer', win.querySelector('.tw-body').innerHTML, '450px');
+        }, 100);
+      };
+
+      status.textContent = 'Ready to replace text on this page';
+    },
+
+    typing: () => {
+      const sentences = [
+        'The quick brown fox jumps over the lazy dog.',
+        'Pack my box with five dozen liquor jugs.',
+        'How vexingly quick daft zebras jump!',
+        'The five boxing wizards jump quickly.',
+        'Sphinx of black quartz, judge my vow.',
+        'Two driven jocks help fax my big quiz.',
+        'Quick zephyrs blow, vexing daft Jim.',
+      ];
+
+      const win = createWindow('typing', '⌨️ Typing Test', `
+        <div style="text-align:center;">
+          <div style="display:flex;justify-content:space-around;margin-bottom:20px;">
+            <div>
+              <div style="font-size:32px;font-weight:900;color:#667eea;" id="typing-wpm">0</div>
+              <div style="font-size:12px;color:#718096;">WPM</div>
+            </div>
+            <div>
+              <div style="font-size:32px;font-weight:900;color:#48bb78;" id="typing-accuracy">100</div>
+              <div style="font-size:12px;color:#718096;">Accuracy %</div>
+            </div>
+            <div>
+              <div style="font-size:32px;font-weight:900;color:#f6ad55;" id="typing-time">60</div>
+              <div style="font-size:12px;color:#718096;">Seconds</div>
+            </div>
+          </div>
+          
+          <div id="typing-text" style="font-size:20px;line-height:1.8;padding:20px;background:#f7fafc;border-radius:12px;margin-bottom:20px;min-height:100px;font-family:monospace;"></div>
+          
+          <textarea id="typing-input" class="tw-input" rows="4" placeholder="Click here and start typing..." style="font-size:18px;font-family:monospace;"></textarea>
+          
+          <button class="tw-btn tw-btn-primary" id="typing-restart">🔄 New Test</button>
+        </div>
+      `, '600px');
+
+      const wpmEl = win.querySelector('#typing-wpm');
+      const accEl = win.querySelector('#typing-accuracy');
+      const timeEl = win.querySelector('#typing-time');
+      const textEl = win.querySelector('#typing-text');
+      const input = win.querySelector('#typing-input');
+      const restartBtn = win.querySelector('#typing-restart');
+
+      let currentText = '';
+      let startTime = null;
+      let timeLeft = 60;
+      let timerInterval = null;
+      let errors = 0;
+
+      function newTest() {
+        currentText = sentences[Math.floor(Math.random() * sentences.length)];
+        textEl.textContent = currentText;
+        input.value = '';
+        input.disabled = false;
+        startTime = null;
+        timeLeft = 60;
+        errors = 0;
+        timeEl.textContent = '60';
+        wpmEl.textContent = '0';
+        accEl.textContent = '100';
+        clearInterval(timerInterval);
+      }
+
+      input.oninput = () => {
+        if (!startTime) {
+          startTime = Date.now();
+          timerInterval = setInterval(() => {
+            timeLeft--;
+            timeEl.textContent = timeLeft;
+            if (timeLeft <= 0) {
+              clearInterval(timerInterval);
+              input.disabled = true;
+              alert(`Test Complete!\nWPM: ${wpmEl.textContent}\nAccuracy: ${accEl.textContent}%`);
+            }
+          }, 1000);
+        }
+
+        const typed = input.value;
+        const words = typed.trim().split(/\s+/).length;
+        const minutes = (Date.now() - startTime) / 60000;
+        const wpm = Math.round(words / minutes) || 0;
+        wpmEl.textContent = wpm;
+
+        // Calculate accuracy
+        errors = 0;
+        for (let i = 0; i < typed.length; i++) {
+          if (typed[i] !== currentText[i]) errors++;
+        }
+        const accuracy = Math.round(((typed.length - errors) / typed.length) * 100) || 100;
+        accEl.textContent = accuracy;
+
+        // Highlight text
+        let html = '';
+        for (let i = 0; i < currentText.length; i++) {
+          const char = currentText[i];
+          if (i < typed.length) {
+            if (typed[i] === char) {
+              html += `<span style="color:#48bb78;">${char}</span>`;
+            } else {
+              html += `<span style="color:#f56565;background:#ffe0e0;">${char}</span>`;
+            }
+          } else if (i === typed.length) {
+            html += `<span style="background:#ffd700;">${char}</span>`;
+          } else {
+            html += char;
+          }
+        }
+        textEl.innerHTML = html;
+
+        if (typed === currentText) {
+          clearInterval(timerInterval);
+          input.disabled = true;
+          setTimeout(() => {
+            alert(`Perfect! Test Complete!\nWPM: ${wpm}\nAccuracy: ${accuracy}%\nTime: ${60 - timeLeft}s`);
+          }, 100);
+        }
+      };
+
+      restartBtn.onclick = newTest;
+      newTest();
+    },
+
+    memory: () => {
+      const emojis = ['🍎', '🍌', '🍇', '🍊', '🍓', '🍉', '🍒', '🥝'];
+      
+      const win = createWindow('memory', '🎴 Memory Game', `
+        <div style="text-align:center;">
+          <div style="display:flex;justify-content:space-around;margin-bottom:20px;">
+            <div>
+              <div style="font-size:28px;font-weight:900;color:#667eea;" id="mem-moves">0</div>
+              <div style="font-size:12px;color:#718096;">Moves</div>
+            </div>
+            <div>
+              <div style="font-size:28px;font-weight:900;color:#48bb78;" id="mem-matches">0</div>
+              <div style="font-size:12px;color:#718096;">Matches</div>
+            </div>
+            <div>
+              <div style="font-size:28px;font-weight:900;color:#f6ad55;" id="mem-time">0</div>
+              <div style="font-size:12px;color:#718096;">Seconds</div>
+            </div>
+          </div>
+          
+          <div id="mem-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px;"></div>
+          
+          <button class="tw-btn tw-btn-primary" id="mem-restart">🔄 New Game</button>
+        </div>
+      `, '450px');
+
+      const movesEl = win.querySelector('#mem-moves');
+      const matchesEl = win.querySelector('#mem-matches');
+      const timeEl = win.querySelector('#mem-time');
+      const grid = win.querySelector('#mem-grid');
+      const restartBtn = win.querySelector('#mem-restart');
+
+      let cards = [];
+      let flipped = [];
+      let matched = [];
+      let moves = 0;
+      let matchCount = 0;
+      let time = 0;
+      let timer = null;
+      let canFlip = true;
+
+      function createGame() {
+        const gameEmojis = [...emojis, ...emojis];
+        gameEmojis.sort(() => Math.random() - 0.5);
+        
+        cards = gameEmojis;
+        flipped = [];
+        matched = [];
+        moves = 0;
+        matchCount = 0;
+        time = 0;
+        movesEl.textContent = '0';
+        matchesEl.textContent = '0';
+        timeEl.textContent = '0';
+        clearInterval(timer);
+        canFlip = true;
+
+        grid.innerHTML = gameEmojis.map((emoji, i) => `
+          <div class="mem-card" data-index="${i}" style="
+            width:100%;
+            aspect-ratio:1;
+            background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius:12px;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            font-size:36px;
+            cursor:pointer;
+            transition:all 0.3s;
+            user-select:none;
+          ">?</div>
+        `).join('');
+
+        grid.querySelectorAll('.mem-card').forEach(card => {
+          card.onclick = () => flipCard(parseInt(card.dataset.index));
+        });
+      }
+
+      function flipCard(index) {
+        if (!canFlip || flipped.includes(index) || matched.includes(index)) return;
+        
+        if (!timer) {
+          timer = setInterval(() => {
+            time++;
+            timeEl.textContent = time;
+          }, 1000);
+        }
+
+        const card = grid.children[index];
+        card.textContent = cards[index];
+        card.style.background = 'white';
+        card.style.transform = 'scale(1.05)';
+        
+        flipped.push(index);
+
+        if (flipped.length === 2) {
+          moves++;
+          movesEl.textContent = moves;
+          canFlip = false;
+
+          setTimeout(() => {
+            const [first, second] = flipped;
+            if (cards[first] === cards[second]) {
+              matched.push(first, second);
+              matchCount++;
+              matchesEl.textContent = matchCount;
+              
+              if (matched.length === cards.length) {
+                clearInterval(timer);
+                setTimeout(() => {
+                  alert(`🎉 You Won!\nMoves: ${moves}\nTime: ${time}s`);
+                }, 300);
+              }
+            } else {
+              grid.children[first].textContent = '?';
+              grid.children[first].style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+              grid.children[first].style.transform = '';
+              grid.children[second].textContent = '?';
+              grid.children[second].style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+              grid.children[second].style.transform = '';
+            }
+            
+            flipped = [];
+            canFlip = true;
+          }, 800);
+        }
+      }
+
+      restartBtn.onclick = createGame;
+      createGame();
+    },
+
+    cssplay: () => {
+      const win = createWindow('cssplay', '💅 CSS Playground', `
+        <label class="tw-label">CSS Selector:</label>
+        <input type="text" class="tw-input" id="css-selector" placeholder="e.g., .my-class, #my-id, p" value="body">
+        
+        <label class="tw-label">CSS Code:</label>
+        <textarea id="css-code" class="tw-input" rows="10" placeholder="Enter CSS here..." style="font-family:monospace;font-size:13px;">background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+color: white;
+padding: 20px;</textarea>
+        
+        <div style="display:flex;gap:8px;">
+          <button class="tw-btn tw-btn-primary" id="css-apply" style="flex:1;">✨ Apply CSS</button>
+          <button class="tw-btn tw-btn-danger" id="css-clear" style="flex:1;">🗑️ Clear All</button>
+        </div>
+        
+        <div id="css-status" style="margin-top:15px;padding:12px;background:#f7fafc;border-radius:8px;text-align:center;font-size:13px;color:#4a5568;"></div>
+      `, '500px');
+
+      const selector = win.querySelector('#css-selector');
+      const code = win.querySelector('#css-code');
+      const applyBtn = win.querySelector('#css-apply');
+      const clearBtn = win.querySelector('#css-clear');
+      const status = win.querySelector('#css-status');
+
+      let styleEl = document.createElement('style');
+      styleEl.id = 'aden-css-playground';
+      document.head.appendChild(styleEl);
+
+      applyBtn.onclick = () => {
+        try {
+          const sel = selector.value.trim();
+          const css = code.value.trim();
+          
+          if (!sel) return status.textContent = '⚠️ Enter a selector!';
+          
+          styleEl.textContent = `${sel} { ${css} }`;
+          
+          const matched = document.querySelectorAll(sel);
+          status.textContent = `✓ Applied to ${matched.length} element(s)`;
+        } catch (e) {
+          status.textContent = '❌ Invalid CSS: ' + e.message;
+        }
+      };
+
+      clearBtn.onclick = () => {
+        styleEl.textContent = '';
+        code.value = '';
+        selector.value = 'body';
+        status.textContent = '🗑️ All custom CSS cleared';
+      };
+
+      status.textContent = 'Ready to apply custom CSS';
+    },
+
+    formfill: () => {
+      const win = createWindow('formfill', '📋 Form Filler', `
+        <button class="tw-btn tw-btn-primary" id="ff-auto">🎲 Auto-Fill Forms</button>
+        <button class="tw-btn tw-btn-secondary" id="ff-custom">⚙️ Custom Data</button>
+        
+        <div id="ff-custom-panel" style="display:none;margin-top:15px;">
+          <label class="tw-label">Name:</label>
+          <input type="text" class="tw-input" id="ff-name" value="John Doe">
+          
+          <label class="tw-label">Email:</label>
+          <input type="text" class="tw-input" id="ff-email" value="john@example.com">
+          
+          <label class="tw-label">Phone:</label>
+          <input type="text" class="tw-input" id="ff-phone" value="555-0123">
+          
+          <label class="tw-label">Address:</label>
+          <input type="text" class="tw-input" id="ff-address" value="123 Main St">
+          
+          <button class="tw-btn tw-btn-success" id="ff-apply">✓ Fill Forms</button>
+        </div>
+        
+        <div id="ff-status" style="margin-top:15px;padding:12px;background:#f7fafc;border-radius:8px;text-align:center;font-size:13px;color:#4a5568;"></div>
+      `, '450px');
+
+      const autoBtn = win.querySelector('#ff-auto');
+      const customBtn = win.querySelector('#ff-custom');
+      const customPanel = win.querySelector('#ff-custom-panel');
+      const applyBtn = win.querySelector('#ff-apply');
+      const status = win.querySelector('#ff-status');
+
+      const nameInput = win.querySelector('#ff-name');
+      const emailInput = win.querySelector('#ff-email');
+      const phoneInput = win.querySelector('#ff-phone');
+      const addressInput = win.querySelector('#ff-address');
+
+      function fillForms(data) {
+        const inputs = document.querySelectorAll('input, textarea, select');
+        let filled = 0;
+
+        inputs.forEach(input => {
+          if (input.closest('.tw, #aden-toolkit')) return;
+          
+          const name = (input.name || input.id || input.placeholder || '').toLowerCase();
+          const type = input.type?.toLowerCase();
+
+          if (name.includes('name') || name.includes('user')) {
+            input.value = data.name;
+            filled++;
+          } else if (name.includes('email') || type === 'email') {
+            input.value = data.email;
+            filled++;
+          } else if (name.includes('phone') || name.includes('tel') || type === 'tel') {
+            input.value = data.phone;
+            filled++;
+          } else if (name.includes('address') || name.includes('street')) {
+            input.value = data.address;
+            filled++;
+          } else if (type === 'text' && !input.value) {
+            input.value = 'Test Data';
+            filled++;
+          }
+        });
+
+        status.textContent = `✓ Filled ${filled} field(s)`;
+      }
+
+      autoBtn.onclick = () => {
+        const randomNames = ['Alice Johnson', 'Bob Smith', 'Carol White', 'David Brown'];
+        fillForms({
+          name: randomNames[Math.floor(Math.random() * randomNames.length)],
+          email: `test${Math.floor(Math.random() * 9999)}@example.com`,
+          phone: `555-${Math.floor(Math.random() * 9000) + 1000}`,
+          address: `${Math.floor(Math.random() * 999) + 1} Test St`
+        });
+      };
+
+      customBtn.onclick = () => {
+        customPanel.style.display = customPanel.style.display === 'none' ? 'block' : 'none';
+      };
+
+      applyBtn.onclick = () => {
+        fillForms({
+          name: nameInput.value,
+          email: emailInput.value,
+          phone: phoneInput.value,
+          address: addressInput.value
+        });
+      };
+
+      status.textContent = 'Ready to fill forms on this page';
+    },
+
+    converter: () => {
+      const conversions = {
+        length: {
+          meters: 1,
+          kilometers: 0.001,
+          centimeters: 100,
+          millimeters: 1000,
+          miles: 0.000621371,
+          yards: 1.09361,
+          feet: 3.28084,
+          inches: 39.3701
+        },
+        weight: {
+          kilograms: 1,
+          grams: 1000,
+          milligrams: 1000000,
+          pounds: 2.20462,
+          ounces: 35.274
+        },
+        temperature: {
+          celsius: (v) => v,
+          fahrenheit: (v) => (v * 9/5) + 32,
+          kelvin: (v) => v + 273.15
+        },
+        speed: {
+          'meters/sec': 1,
+          'kilometers/hr': 3.6,
+          'miles/hr': 2.23694,
+          'feet/sec': 3.28084
+        }
+      };
+
+      const win = createWindow('converter', '🔄 Unit Converter', `
+        <label class="tw-label">Category:</label>
+        <select id="conv-category" class="tw-input">
+          <option value="length">Length</option>
+          <option value="weight">Weight</option>
+          <option value="temperature">Temperature</option>
+          <option value="speed">Speed</option>
+        </select>
+        
+        <div style="display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:end;margin-top:15px;">
+          <div>
+            <label class="tw-label">From:</label>
+            <input type="number" id="conv-from-val" class="tw-input" value="1" style="margin-bottom:8px;">
+            <select id="conv-from-unit" class="tw-input"></select>
+          </div>
+          <div style="font-size:24px;padding-bottom:10px;">→</div>
+          <div>
+            <label class="tw-label">To:</label>
+            <input type="number" id="conv-to-val" class="tw-input" readonly style="margin-bottom:8px;">
+            <select id="conv-to-unit" class="tw-input"></select>
+          </div>
+        </div>
+        
+        <button class="tw-btn tw-btn-primary" id="conv-swap">🔄 Swap Units</button>
+      `, '500px');
+
+      const categorySelect = win.querySelector('#conv-category');
+      const fromVal = win.querySelector('#conv-from-val');
+      const toVal = win.querySelector('#conv-to-val');
+      const fromUnit = win.querySelector('#conv-from-unit');
+      const toUnit = win.querySelector('#conv-to-unit');
+      const swapBtn = win.querySelector('#conv-swap');
+
+      function populateUnits() {
+        const cat = categorySelect.value;
+        const units = Object.keys(conversions[cat]);
+        
+        fromUnit.innerHTML = units.map(u => `<option value="${u}">${u}</option>`).join('');
+        toUnit.innerHTML = units.map(u => `<option value="${u}">${u}</option>`).join('');
+        toUnit.selectedIndex = 1;
+        convert();
+      }
+
+      function convert() {
+        const cat = categorySelect.value;
+        const val = parseFloat(fromVal.value) || 0;
+        const from = fromUnit.value;
+        const to = toUnit.value;
+
+        if (cat === 'temperature') {
+          let celsius = val;
+          if (from === 'fahrenheit') celsius = (val - 32) * 5/9;
+          if (from === 'kelvin') celsius = val - 273.15;
+          
+          toVal.value = conversions[cat][to](celsius).toFixed(2);
+        } else {
+          const baseVal = val / conversions[cat][from];
+          toVal.value = (baseVal * conversions[cat][to]).toFixed(4);
+        }
+      }
+
+      categorySelect.onchange = populateUnits;
+      fromVal.oninput = convert;
+      fromUnit.onchange = convert;
+      toUnit.onchange = convert;
+
+      swapBtn.onclick = () => {
+        const tempUnit = fromUnit.value;
+        fromUnit.value = toUnit.value;
+        toUnit.value = tempUnit;
+        fromVal.value = toVal.value;
+        convert();
+      };
+
+      populateUnits();
+    },
+
+    lorem: () => {
+      const win = createWindow('lorem', '📄 Lorem Ipsum Generator', `
+        <label class="tw-label">Type:</label>
+        <select id="lorem-type" class="tw-input">
+          <option value="paragraphs">Paragraphs</option>
+          <option value="sentences">Sentences</option>
+          <option value="words">Words</option>
+        </select>
+        
+        <label class="tw-label">Amount:</label>
+        <input type="number" id="lorem-amount" class="tw-input" value="3" min="1" max="100">
+        
+        <button class="tw-btn tw-btn-primary" id="lorem-generate">✨ Generate</button>
+        
+        <label class="tw-label">Generated Text:</label>
+        <textarea id="lorem-output" class="tw-input" rows="10" readonly style="font-size:13px;"></textarea>
+        
+        <button class="tw-btn tw-btn-success" id="lorem-copy">📋 Copy to Clipboard</button>
+      `, '550px');
+
+      const typeSelect = win.querySelector('#lorem-type');
+      const amountInput = win.querySelector('#lorem-amount');
+      const generateBtn = win.querySelector('#lorem-generate');
+      const output = win.querySelector('#lorem-output');
+      const copyBtn = win.querySelector('#lorem-copy');
+
+      const loremWords = ['lorem', 'ipsum', 'dolor', 'sit', 'amet', 'consectetur', 'adipiscing', 'elit', 'sed', 'do', 'eiusmod', 'tempor', 'incididunt', 'ut', 'labore', 'et', 'dolore', 'magna', 'aliqua', 'enim', 'ad', 'minim', 'veniam', 'quis', 'nostrud', 'exercitation', 'ullamco', 'laboris', 'nisi', 'aliquip', 'ex', 'ea', 'commodo', 'consequat', 'duis', 'aute', 'irure', 'in', 'reprehenderit', 'voluptate', 'velit', 'esse', 'cillum', 'fugiat', 'nulla', 'pariatur', 'excepteur', 'sint', 'occaecat', 'cupidatat', 'non', 'proident', 'sunt', 'culpa', 'qui', 'officia', 'deserunt', 'mollit', 'anim', 'id', 'est', 'laborum'];
+
+      function generateWords(count) {
+        const words = [];
+        for (let i = 0; i < count; i++) {
+          words.push(loremWords[Math.floor(Math.random() * loremWords.length)]);
+        }
+        return words;
+      }
+
+      function generateSentence() {
+        const words = generateWords(Math.floor(Math.random() * 10) + 5);
+        words[0] = words[0].charAt(0).toUpperCase() + words[0].slice(1);
+        return words.join(' ') + '.';
+      }
+
+      function generateParagraph() {
+        const sentences = [];
+        const sentenceCount = Math.floor(Math.random() * 4) + 3;
+        for (let i = 0; i < sentenceCount; i++) {
+          sentences.push(generateSentence());
+        }
+        return sentences.join(' ');
+      }
+
+      generateBtn.onclick = () => {
+        const type = typeSelect.value;
+        const amount = parseInt(amountInput.value) || 1;
+        let result = '';
+
+        if (type === 'paragraphs') {
+          const paragraphs = [];
+          for (let i = 0; i < amount; i++) {
+            paragraphs.push(generateParagraph());
+          }
+          result = paragraphs.join('\n\n');
+        } else if (type === 'sentences') {
+          const sentences = [];
+          for (let i = 0; i < amount; i++) {
+            sentences.push(generateSentence());
+          }
+          result = sentences.join(' ');
+        } else if (type === 'words') {
+          result = generateWords(amount).join(' ');
+        }
+
+        output.value = result;
+      };
+
+      copyBtn.onclick = () => {
+        output.select();
+        navigator.clipboard.writeText(output.value);
+        copyBtn.textContent = '✓ Copied!';
+        setTimeout(() => copyBtn.textContent = '📋 Copy to Clipboard', 1500);
+      };
+
+      generateBtn.click();
+    },
+
+    performance: () => {
+      const win = createWindow('performance', '📊 Performance Monitor', `
+        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:15px;margin-bottom:20px;">
+          <div style="background:#f7fafc;padding:15px;border-radius:10px;text-align:center;">
+            <div style="font-size:32px;font-weight:900;color:#667eea;" id="perf-fps">0</div>
+            <div style="font-size:12px;color:#718096;margin-top:5px;">FPS</div>
+          </div>
+          <div style="background:#f7fafc;padding:15px;border-radius:10px;text-align:center;">
+            <div style="font-size:32px;font-weight:900;color:#48bb78;" id="perf-memory">0</div>
+            <div style="font-size:12px;color:#718096;margin-top:5px;">Memory (MB)</div>
+          </div>
+        </div>
+        
+        <div style="background:#f7fafc;padding:15px;border-radius:10px;margin-bottom:15px;">
+          <div style="font-weight:700;margin-bottom:10px;">Page Load Metrics:</div>
+          <div style="font-size:13px;line-height:1.8;" id="perf-metrics"></div>
+        </div>
+        
+        <div style="background:#f7fafc;padding:15px;border-radius:10px;">
+          <div style="font-weight:700;margin-bottom:10px;">Resources:</div>
+          <div style="font-size:13px;line-height:1.8;" id="perf-resources"></div>
+        </div>
+      `, '500px');
+
+      const fpsEl = win.querySelector('#perf-fps');
+      const memoryEl = win.querySelector('#perf-memory');
+      const metricsEl = win.querySelector('#perf-metrics');
+      const resourcesEl = win.querySelector('#perf-resources');
+
+      // FPS Counter
+      let fps = 0;
+      let lastTime = performance.now();
+      let frames = 0;
+
+      function updateFPS() {
+        frames++;
+        const now = performance.now();
+        if (now >= lastTime + 1000) {
+          fps = Math.round((frames * 1000) / (now - lastTime));
+          fpsEl.textContent = fps;
+          frames = 0;
+          lastTime = now;
+        }
+        if (win.parentNode) requestAnimationFrame(updateFPS);
+      }
+      requestAnimationFrame(updateFPS);
+
+      // Memory Usage
+      function updateMemory() {
+        if (performance.memory) {
+          const used = (performance.memory.usedJSHeapSize / 1048576).toFixed(2);
+          memoryEl.textContent = used;
+        } else {
+          memoryEl.textContent = 'N/A';
+        }
+      }
+      setInterval(updateMemory, 1000);
+      updateMemory();
+
+      // Page Load Metrics
+      const perfData = performance.timing;
+      const loadTime = perfData.loadEventEnd - perfData.navigationStart;
+      const domReady = perfData.domContentLoadedEventEnd - perfData.navigationStart;
+      const connectTime = perfData.responseEnd - perfData.requestStart;
+
+      metricsEl.innerHTML = `
+        <div>⚡ Page Load: <strong>${loadTime}ms</strong></div>
+        <div>🔷 DOM Ready: <strong>${domReady}ms</strong></div>
+        <div>🌐 Server Response: <strong>${connectTime}ms</strong></div>
+      `;
+
+      // Resources
+      const resources = performance.getEntriesByType('resource');
+      const scripts = resources.filter(r => r.initiatorType === 'script').length;
+      const styles = resources.filter(r => r.initiatorType === 'link').length;
+      const images = resources.filter(r => r.initiatorType === 'img').length;
+
+      resourcesEl.innerHTML = `
+        <div>📜 Scripts: <strong>${scripts}</strong></div>
+        <div>🎨 Stylesheets: <strong>${styles}</strong></div>
+        <div>🖼️ Images: <strong>${images}</strong></div>
+        <div>📦 Total Resources: <strong>${resources.length}</strong></div>
+      `;
+    },
+
+    screenshot: () => {
+      const win = createWindow('screenshot', '📸 Screenshot Tool', `
+        <div style="text-align:center;">
+          <div style="background:#f7fafc;padding:20px;border-radius:10px;margin-bottom:15px;">
+            <div style="font-size:48px;margin-bottom:10px;">📸</div>
+            <div style="font-size:14px;color:#718096;">Capture any part of the page</div>
+          </div>
+          
+          <button class="tw-btn tw-btn-primary" id="ss-select">📐 Select Area</button>
+          <button class="tw-btn tw-btn-success" id="ss-full">🖥️ Full Page</button>
+          <button class="tw-btn tw-btn-secondary" id="ss-visible">👁️ Visible Area</button>
+          
+          <div id="ss-preview" style="margin-top:15px;display:none;">
+            <label class="tw-label">Preview:</label>
+            <img id="ss-img" style="max-width:100%;border-radius:8px;border:2px solid #e2e8f0;">
+            <button class="tw-btn tw-btn-success" id="ss-download" style="margin-top:10px;">💾 Download</button>
+          </div>
+        </div>
+      `, '450px');
+
+      const selectBtn = win.querySelector('#ss-select');
+      const fullBtn = win.querySelector('#ss-full');
+      const visibleBtn = win.querySelector('#ss-visible');
+      const preview = win.querySelector('#ss-preview');
+      const img = win.querySelector('#ss-img');
+      const downloadBtn = win.querySelector('#ss-download');
+
+      let screenshotData = null;
+
+      async function takeScreenshot(element) {
+        try {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          const rect = element.getBoundingClientRect();
+          
+          canvas.width = rect.width;
+          canvas.height = rect.height;
+
+          // Simple background color capture
+          const bgColor = window.getComputedStyle(element).backgroundColor;
+          ctx.fillStyle = bgColor;
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+          // Add text indicating screenshot
+          ctx.fillStyle = '#667eea';
+          ctx.font = '20px Arial';
+          ctx.textAlign = 'center';
+          ctx.fillText('Screenshot captured!', canvas.width/2, canvas.height/2);
+          ctx.fillText('(HTML2Canvas not available)', canvas.width/2, canvas.height/2 + 30);
+
+          screenshotData = canvas.toDataURL('image/png');
+          img.src = screenshotData;
+          preview.style.display = 'block';
+        } catch (e) {
+          alert('Screenshot failed: ' + e.message);
+        }
+      }
+
+      selectBtn.onclick = () => {
+        alert('Click on any element to screenshot it!');
+        const handler = (e) => {
+          if (e.target.closest('.tw')) return;
+          e.preventDefault();
+          e.stopPropagation();
+          takeScreenshot(e.target);
+          document.removeEventListener('click', handler, true);
+        };
+        document.addEventListener('click', handler, true);
+      };
+
+      fullBtn.onclick = () => takeScreenshot(document.documentElement);
+      visibleBtn.onclick = () => takeScreenshot(document.body);
+
+      downloadBtn.onclick = () => {
+        const a = document.createElement('a');
+        a.href = screenshotData;
+        a.download = `screenshot-${Date.now()}.png`;
+        a.click();
+      };
+    },
+
+    linkchecker: () => {
+      const win = createWindow('linkchecker', '🔗 Link Checker', `
+        <button class="tw-btn tw-btn-primary" id="lc-scan">🔍 Scan Page Links</button>
+        
+        <div id="lc-results" style="margin-top:15px;display:none;">
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:15px;">
+            <div style="background:#f7fafc;padding:12px;border-radius:8px;text-align:center;">
+              <div style="font-size:24px;font-weight:900;color:#667eea;" id="lc-total">0</div>
+              <div style="font-size:11px;color:#718096;">Total Links</div>
+            </div>
+            <div style="background:#f7fafc;padding:12px;border-radius:8px;text-align:center;">
+              <div style="font-size:24px;font-weight:900;color:#48bb78;" id="lc-internal">0</div>
+              <div style="font-size:11px;color:#718096;">Internal</div>
+            </div>
+            <div style="background:#f7fafc;padding:12px;border-radius:8px;text-align:center;">
+              <div style="font-size:24px;font-weight:900;color:#f6ad55;" id="lc-external">0</div>
+              <div style="font-size:11px;color:#718096;">External</div>
+            </div>
+          </div>
+          
+          <label class="tw-label">All Links:</label>
+          <div id="lc-list" style="max-height:300px;overflow-y:auto;background:#f7fafc;border-radius:8px;padding:10px;"></div>
+        </div>
+      `, '550px');
+
+      const scanBtn = win.querySelector('#lc-scan');
+      const results = win.querySelector('#lc-results');
+      const totalEl = win.querySelector('#lc-total');
+      const internalEl = win.querySelector('#lc-internal');
+      const externalEl = win.querySelector('#lc-external');
+      const listEl = win.querySelector('#lc-list');
+
+      scanBtn.onclick = () => {
+        const links = Array.from(document.querySelectorAll('a[href]'));
+        const currentDomain = window.location.hostname;
+        
+        let internal = 0;
+        let external = 0;
+
+        const linkHTML = links.map((link, i) => {
+          const href = link.href;
+          const isInternal = href.includes(currentDomain) || href.startsWith('/') || href.startsWith('#');
+          
+          if (isInternal) internal++;
+          else external++;
+
+          const icon = isInternal ? '🏠' : '🌐';
+          const color = isInternal ? '#48bb78' : '#f6ad55';
+
+          return `
+            <div style="padding:8px;margin:5px 0;background:white;border-radius:6px;border-left:3px solid ${color};">
+              <div style="font-size:12px;font-weight:700;color:${color};">${icon} ${isInternal ? 'Internal' : 'External'}</div>
+              <div style="font-size:11px;color:#4a5568;margin-top:3px;word-break:break-all;">${href}</div>
+              ${link.textContent.trim() ? `<div style="font-size:11px;color:#718096;margin-top:2px;">"${link.textContent.trim().substring(0, 50)}..."</div>` : ''}
+            </div>
+          `;
+        }).join('');
+
+        totalEl.textContent = links.length;
+        internalEl.textContent = internal;
+        externalEl.textContent = external;
+        listEl.innerHTML = linkHTML || '<div style="text-align:center;color:#718096;padding:20px;">No links found</div>';
+        
+        results.style.display = 'block';
+        scanBtn.textContent = '🔄 Re-scan Links';
+      };
+    },
+  };
+
+  function launchTool(id) {
+    if (TOOLS[id]) {
+      TOOLS[id]();
+    } else {
+      alert('🚧 Tool not implemented yet!');
+    }
+  }(function() {
   // Remove existing
   const existing = document.getElementById('aden-toolkit');
   if (existing) existing.remove();
@@ -762,3 +1857,4 @@
   console.log('%c🚀 Console Toolkit Hub Loaded!', 'font-size:20px;font-weight:bold;color:#667eea;');
   console.log('%c' + tools.length + ' tools available | Press Ctrl+Shift+K to open', 'font-size:12px;color:#764ba2;');
   console.log('%cCreated by Aden', 'font-size:11px;color:#999;');
+})();
